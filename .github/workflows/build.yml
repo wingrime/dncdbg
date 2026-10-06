@@ -84,21 +84,7 @@ jobs:
       - name: Build (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: |
-          cmake --build build --target install --parallel $env:NUMBER_OF_PROCESSORS --config Release 2>&1 |
-            Tee-Object -FilePath build-win.log
-          exit $LASTEXITCODE
-
-      - name: Publish Windows build log (debug)
-        if: failure() && runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          git config user.email "ci@dncdbg.local"
-          git config user.name "dncdbg-ci"
-          git checkout -B ci-debug
-          git add -f build-win.log
-          git commit -m "ci: windows build log" --allow-empty
-          git push -f origin ci-debug
+        run: cmake --build build --target install --parallel $env:NUMBER_OF_PROCESSORS --config Release
 
       - name: Build (Unix)
         if: runner.os != 'Windows'
