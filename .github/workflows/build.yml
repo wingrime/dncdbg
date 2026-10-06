@@ -1,0 +1,132 @@
+name: Build packages
+
+on:
+  push:
+    branches: [ master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+# Required by the release job to create a GitHub Release and upload assets.
+permissions:
+  contents: write
+
+# Cancel previous runs for the same ref, except for tag builds that publish a release.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  build:
+    name: ${{ matrix.package }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: dncdbg-linux-amd64
+            os: ubuntu-22.04
+            ext: tar.gz
+          - package: dncdbg-win64
+            os: windows-2022
+            ext: zip
+          - package: dncdbg-osx-arm64
+            os: macos-14
+            ext: zip
+            osx_arch: arm64
+          - package: dncdbg-osx-amd64
+            os: macos-14
+            ext: zip
+            osx_arch: x86_64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake clang llvm build-essential libcurl4-openssl-dev
+
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
+            -DCLR_CMAKE_HOST_ARCH=x64 `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE/install"
+
+      - name: Configure (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          extra=()
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            extra+=("-DCMAKE_OSX_ARCHITECTURES=${{ matrix.osx_arch }}")
+          fi
+          CC=clang CXX=clang++ cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$PWD/install" \
+            "${extra[@]}"
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: cmake --build build --target install --parallel $env:NUMBER_OF_PROCESSORS --config Release
+
+      - name: Build (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: cmake --build build --target install --parallel "$(getconf _NPROCESSORS_ONLN)"
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path pkg/dncdbg | Out-Null
+          Copy-Item install/dncdbg.exe, install/dbgshim.dll, LICENSE, README.md pkg/dncdbg/
+          Compress-Archive -Path pkg/dncdbg -DestinationPath "${{ matrix.package }}.${{ matrix.ext }}" -Force
+
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p pkg/dncdbg
+          cp LICENSE README.md pkg/dncdbg/
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            cp install/dncdbg install/libdbgshim.dylib pkg/dncdbg/
+            ( cd pkg && zip -r -y "../${{ matrix.package }}.${{ matrix.ext }}" dncdbg )
+          else
+            cp install/dncdbg install/libdbgshim.so pkg/dncdbg/
+            tar -C pkg -czf "${{ matrix.package }}.${{ matrix.ext }}" dncdbg
+          fi
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.package }}
+          path: ${{ matrix.package }}.${{ matrix.ext }}
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
