@@ -35,12 +35,15 @@ jobs:
       - name: Re-vendor dotnet/diagnostics native sources
         run: tools/update-diagnostics.sh "$DIAGNOSTICS_REF"
 
+      - name: Package patched diagnostics sources
+        shell: bash
+        run: tar -C third-party -czf diagnostics-src.tar.gz diagnostics
+
       - name: Upload patched diagnostics sources
         uses: actions/upload-artifact@v7
         with:
           name: diagnostics-src
-          path: third-party/diagnostics
-          include-hidden-files: true
+          path: diagnostics-src.tar.gz
           if-no-files-found: error
 
   build:
@@ -70,15 +73,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Overlay patched diagnostics sources
-        shell: bash
-        run: rm -rf third-party/diagnostics
-
       - name: Download patched diagnostics sources
         uses: actions/download-artifact@v8
         with:
           name: diagnostics-src
-          path: third-party/diagnostics
+          path: .
+
+      - name: Overlay patched diagnostics sources
+        shell: bash
+        run: |
+          rm -rf third-party/diagnostics
+          tar -C third-party -xzf diagnostics-src.tar.gz
+          rm -f diagnostics-src.tar.gz
 
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
