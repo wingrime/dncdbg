@@ -1,0 +1,39 @@
+diff --git a/eng/native/configurecompiler.cmake b/eng/native/configurecompiler.cmake
+index d116b0d..b81bb5b 100644
+--- a/eng/native/configurecompiler.cmake
++++ b/eng/native/configurecompiler.cmake
+@@ -7,7 +7,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/configuretools.cmake)
+ # Set initial flags for each configuration
+ 
+ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+-set(CMAKE_C_STANDARD 11)
++set(CMAKE_C_STANDARD 17)
+ set(CMAKE_C_STANDARD_REQUIRED ON)
+ set(CMAKE_CXX_STANDARD 17)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+@@ -253,13 +253,14 @@ if (CLR_CMAKE_ENABLE_SANITIZERS)
+         integer
+         nonnull-attribute
+         null
+-        object-size
++        #object-size
+         "return"
+         returns-nonnull-attribute
+         shift
+         unreachable
+         vla-bound
+-        vptr)
++        #vptr
++        )
+       list(APPEND CLR_CMAKE_SANITIZER_RUNTIMES
+         undefined)
+       message("-- Undefined Behavior Sanitizer (ubsan) enabled")
+@@ -692,7 +693,7 @@ if (CLR_CMAKE_HOST_UNIX)
+     set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+     set(CMAKE_OBJCXX_FLAGS "${CMAKE_OBJCXX_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+   elseif(CLR_CMAKE_HOST_OSX)
+-    set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0")
++    set(CMAKE_OSX_DEPLOYMENT_TARGET "13.3")
+     if(CLR_CMAKE_HOST_ARCH_ARM64)
+       add_compile_options(-arch arm64)
+     elseif(CLR_CMAKE_HOST_ARCH_AMD64)

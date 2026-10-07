@@ -1,0 +1,13 @@
+diff --git a/eng/native/functions.cmake b/eng/native/functions.cmake
+index b1cb09d..c619ce9 100644
+--- a/eng/native/functions.cmake
++++ b/eng/native/functions.cmake
+@@ -643,7 +643,7 @@ endfunction()
+ 
+ function(add_executable_clr targetName)
+   if(NOT WIN32)
+-    add_executable(${ARGV} ${VERSION_FILE_PATH})
++    add_executable(${ARGV})
+     disable_pax_mprotect(${ARGV})
+   else()
+     add_executable(${ARGV})

@@ -9,6 +9,7 @@ The licenses below apply only to the corresponding third-party components. The p
 - **Project:** [.NET Diagnostics](https://github.com/dotnet/diagnostics)
 - **Included version:** `v10.0.745401`
 - **Included in:** [`third-party/diagnostics`](third-party/diagnostics/)
+- **Shipped `libdbgshim`:** the `libdbgshim` / `dbgshim.dll` bundled in release packages is built from a pinned `dotnet/diagnostics` revision (master), applied by [`tools/update-diagnostics.sh`](tools/update-diagnostics.sh). See the workflow input `diagnostics_ref` in [`.github/workflows/build.yml`](.github/workflows/build.yml).
 - **License:** MIT License
 - **Copyright:** .NET Foundation and Contributors
 - **License text:** [`third-party/diagnostics/LICENSE.TXT`](third-party/diagnostics/LICENSE.TXT)

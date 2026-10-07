@@ -7,6 +7,11 @@ on:
   pull_request:
     branches: [ master ]
   workflow_dispatch:
+    inputs:
+      diagnostics_ref:
+        description: 'dotnet/diagnostics git ref (SHA, tag or branch) to build libdbgshim from'
+        required: false
+        default: '3359d7c23d7e436ac96d3ea760eca89a70ee4e81'
 
 # Required by the release job to create a GitHub Release and upload assets.
 permissions:
@@ -18,8 +23,29 @@ concurrency:
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
+  prepare-diagnostics:
+    name: Prepare diagnostics sources
+    runs-on: ubuntu-22.04
+    env:
+      DIAGNOSTICS_REF: ${{ inputs.diagnostics_ref || '3359d7c23d7e436ac96d3ea760eca89a70ee4e81' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Re-vendor dotnet/diagnostics native sources
+        run: tools/update-diagnostics.sh "$DIAGNOSTICS_REF"
+
+      - name: Upload patched diagnostics sources
+        uses: actions/upload-artifact@v7
+        with:
+          name: diagnostics-src
+          path: third-party/diagnostics
+          include-hidden-files: true
+          if-no-files-found: error
+
   build:
     name: ${{ matrix.package }}
+    needs: prepare-diagnostics
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -43,6 +69,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Overlay patched diagnostics sources
+        shell: bash
+        run: rm -rf third-party/diagnostics
+
+      - name: Download patched diagnostics sources
+        uses: actions/download-artifact@v8
+        with:
+          name: diagnostics-src
+          path: third-party/diagnostics
 
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'

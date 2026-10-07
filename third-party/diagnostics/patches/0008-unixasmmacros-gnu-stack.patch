@@ -1,0 +1,15 @@
+diff --git a/src/shared/pal/inc/unixasmmacros.inc b/src/shared/pal/inc/unixasmmacros.inc
+index 120b265..7fe474a 100644
+--- a/src/shared/pal/inc/unixasmmacros.inc
++++ b/src/shared/pal/inc/unixasmmacros.inc
+@@ -57,3 +57,10 @@
+ #elif defined(HOST_POWERPC64)
+ #include "unixasmmacrosppc64le.inc"
+ #endif
++
++// Mark the stack as non-executable for ELF targets.
++// https://github.com/dotnet/runtime/issues/125469
++#if !defined(__APPLE__)
++.pushsection .note.GNU-stack,"",%progbits
++.popsection
++#endif

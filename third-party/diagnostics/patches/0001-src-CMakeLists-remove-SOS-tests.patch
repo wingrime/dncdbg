@@ -1,0 +1,11 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 9cc90db..2a0ed38 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -5,6 +5,4 @@ if (CLR_CMAKE_HOST_UNIX)
+ endif (CLR_CMAKE_HOST_UNIX)
+ 
+ add_subdirectory(shared)
+-add_subdirectory(SOS)
+ add_subdirectory(dbgshim)
+-add_subdirectory(tests)
